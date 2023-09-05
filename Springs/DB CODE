@@ -1,0 +1,179 @@
+/************************************************get count of slots by given docid and weekday******************************************************************************/
+
+CREATE OR REPLACE FUNCTION GetSlotCountForDoctor(docid integer, weekday integer)
+RETURNS integer AS $$
+DECLARE
+    slot_count integer := 0;
+    slot_record RECORD;  -- Declare a record variable outside the loop
+BEGIN
+    -- Iterate through doctor's available time slots
+    FOR slot_record IN
+        SELECT
+            "doctorid",
+            "doctorslotindex",
+            "doctoravailablefrom"::time,
+            "doctoravailableto"::time,
+            "doctoravailableslot",
+            "doctorschedule"
+        FROM
+            doctorschedule_MGB
+        WHERE
+            "doctorid" = docid
+    LOOP
+        -- Check if the specified weekday is included in the doctor's schedule
+        IF position(weekday::text in slot_record.doctorschedule) > 0 THEN
+            -- Calculate the slot intervals
+            FOR i IN 0..((EXTRACT(EPOCH FROM (slot_record.doctoravailableto - slot_record.doctoravailablefrom)) / 60) / slot_record.doctoravailableslot - 1)::integer
+            LOOP
+                -- Increment the slot count
+                slot_count := slot_count + 1;
+            END LOOP;
+        END IF;
+    END LOOP;
+    
+    -- Return the slot count
+    RETURN slot_count;
+END;
+$$ LANGUAGE plpgsql;
+
+
+/**************************************************get count of slots by the given docid and date***************************************************************/
+
+
+
+create or Replace function getslotcountperdate(doctor_id integer,slot_date DATE)
+returns integer as $$
+
+Declare 
+   res integer :=0;
+BEGIN
+	select count(*) into res  
+	from appointmentsslotcalendar 
+	where slotdoctorid=doctor_id 
+	and slotdate=slot_date;
+	
+	return res;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+select getslotcountperdate(6,'2023-09-25')
+
+
+/****************************************************createslotsfor the given docid***********************************************************************/
+
+
+CREATE OR REPLACE FUNCTION create_slots_for_doctor(doctor_id integer, today_date date) RETURNS void AS $$
+DECLARE
+    slot_record RECORD;
+BEGIN
+    -- Iterate through doctor's available time slots
+    FOR slot_record IN
+        SELECT
+            "doctorid",
+            "doctorslotindex",
+            "doctoravailablefrom"::time,
+            "doctoravailableto"::time,
+            "doctoravailableslot",
+            "doctorschedule"
+        FROM
+            doctorschedule_MGB
+        WHERE
+            "doctorid" = doctor_id
+    LOOP
+        -- Check if today's date is included in the doctor's schedule
+        IF position(EXTRACT(ISODOW FROM today_date)::text in slot_record.doctorschedule) > 0 THEN
+            -- Calculate the slot intervals
+            FOR i IN 0..((EXTRACT(EPOCH FROM (slot_record.doctoravailableto - slot_record.doctoravailablefrom)) / 60) / slot_record.doctoravailableslot - 1)::integer
+            LOOP
+                -- Calculate the slot's start and end times
+                INSERT INTO AppointmentsSlotCalendar ("slotdoctorid", "slotdate", "slotfrom", "slotto", "slotstatus")
+                VALUES (
+                    slot_record.doctorid,
+                    today_date,
+                    slot_record.doctoravailablefrom + (i * slot_record.doctoravailableslot || ' minutes')::interval,
+                    slot_record.doctoravailablefrom + ((i + 1) * slot_record.doctoravailableslot || ' minutes')::interval,
+                    'available'
+                );
+            END LOOP;
+        END IF;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+/**************************************************procedure to generate slots in the range*********************************************************************/
+
+CREATE OR REPLACE PROCEDURE CreateAppointmentsForDoctorWithChecks(doctor_id integer)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+	target_date DATE := current_date;
+    range_value integer;
+    --target_date DATE;
+    slot_count integer;
+
+BEGIN
+    -- Retrieve the range from the doc_availability table based on doctor_id
+    SELECT rangeofavail INTO range_value
+    FROM doc_availability
+    WHERE docid = doctor_id;  -- Change 'docid' to 'doctor_id'
+
+    IF range_value IS NULL THEN
+        RAISE EXCEPTION 'No range found for doctor_id = %', doctor_id;  -- Change 'docid' to 'doctor_id'
+        RETURN;
+    END IF;
+
+    -- Initialize the target_date with currentdate
+    --target_date := currentdate;
+
+    -- Iterate through a range of dates from currentdate to currentdate + range_value
+    FOR i IN 1..range_value LOOP
+        -- Check if the target_date does not exist in the appointmentslotcalendar table
+        IF NOT EXISTS (
+            SELECT 1
+            FROM appointmentsslotcalendar
+            WHERE slotdoctorid = doctor_id  -- Change 'docid' to 'doctor_id'
+            AND slotdate = target_date
+        ) THEN
+            -- Check if the doctor is available on the target_date using GetSlotCountForDoctor
+            IF GetSlotCountForDoctor(doctor_id, EXTRACT(ISODOW FROM target_date)::integer) > 0 THEN
+                -- Get the slot count for the target date using getslotcountperdate
+                slot_count := getslotcountperdate(doctor_id, target_date);  -- Change 'docid' to 'doctor_id'
+            
+                -- Insert the record into appointmentslotcalendar for each slot
+                FOR j IN 1..slot_count LOOP
+                    PERFORM create_slots_for_doctor(doctor_id, target_date);  -- Change 'docid' to 'doctor_id'
+                END LOOP;
+            END IF;
+        END IF;
+
+        -- Increment the target_date for the next iteration
+        target_date := target_date + 1;  -- Add one day
+    END LOOP;
+END;
+$$;
+
+
+CALL CreateAppointmentsForDoctorWithChecks(1);
+
+
+/*****************************************insert function to call the procedure********************************************************************/
+
+
+CREATE OR REPLACE FUNCTION Insert_Function() RETURNS Trigger AS $$
+BEGIN
+    call CreateAppointmentsForDoctorWithChecks(new.doctorid); 
+	return new;
+END;
+$$ LANGUAGE plpgsql;
+
+/****************************************trigger to invoke ************************************************************************/
+
+
+CREATE TRIGGER InsertTrigger
+AFTER INSERT ON doctorschedule_MGB
+FOR EACH ROW
+EXECUTE FUNCTION Insert_Function();
+
