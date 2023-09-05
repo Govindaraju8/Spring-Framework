@@ -1,7 +1,7 @@
 /***************************procedure to generate slots*********************************************************/
 
 
-CREATE OR REPLACE FUNCTION create_slots_for_doctor(doctor_id integer, today_date date) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION create_slots_for_doctors(doctor_id integer, today_date date) RETURNS void AS $$
 DECLARE
     slot_record RECORD;
 BEGIN
