@@ -1,0 +1,71 @@
+/***************************procedure to generate slots*********************************************************/
+
+
+CREATE OR REPLACE FUNCTION create_slots_for_doctor(doctor_id integer, today_date date) RETURNS void AS $$
+DECLARE
+    slot_record RECORD;
+BEGIN
+    -- Iterate through doctor's available time slots
+    FOR slot_record IN
+        SELECT
+            "doctorid",
+            "doctorslotindex",
+            "doctoravailablefrom"::time,
+            "doctoravailableto"::time,
+            "doctoravailableslot",
+            "doctorschedule"
+        FROM
+            doctorschedule123
+        WHERE
+            "doctorid" = doctor_id
+    LOOP
+        -- Check if today's date is included in the doctor's schedule
+        IF position(EXTRACT(ISODOW FROM today_date)::text in slot_record.doctorschedule) > 0 THEN
+            -- Calculate the slot intervals
+            FOR i IN 0..((EXTRACT(EPOCH FROM (slot_record.doctoravailableto - slot_record.doctoravailablefrom)) / 60) / slot_record.doctoravailableslot - 1)::integer
+            LOOP
+                -- Calculate the slot's start and end times
+                INSERT INTO AppointmentsSlotCalendar ("slotdoctorid", "slotdate", "slotfrom", "slotto", "slotstatus")
+                VALUES (
+                    slot_record.doctorid,
+                    today_date,
+                    slot_record.doctoravailablefrom + (i * slot_record.doctoravailableslot || ' minutes')::interval,
+                    slot_record.doctoravailablefrom + ((i + 1) * slot_record.doctoravailableslot || ' minutes')::interval,
+                    'available'
+                );
+            END LOOP;
+        END IF;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+/************************function to update calendar********************/
+
+CREATE OR REPLACE FUNCTION update_calendar_daily()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Check if the current time is 12:30 AM
+    IF current_time >= '00:30:00' AND current_time < '00:31:00' THEN
+        -- Loop through each doctor
+        FOR doctor_id IN 1..10 LOOP
+            -- Generate slots for the next 30 days for each doctor
+            FOR day_offset IN 0..29 LOOP
+                EXECUTE 'SELECT create_slots_for_doctors(' || doctor_id || ', CURRENT_DATE + ' || day_offset || ')';
+            END LOOP;
+        END LOOP;
+    END IF;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+/**************************trigger**************************/
+
+CREATE TRIGGER daily_update_calendar_trigger
+AFTER INSERT ON Appointmentsslotcalendar
+FOR EACH ROW
+EXECUTE FUNCTION update_calendar_daily();
