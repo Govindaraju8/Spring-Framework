@@ -1,0 +1,4 @@
+"loantype_id","loantype_name","loantype_desc"
+1,"Personal Loan","Short-term unsecured personal loans."
+2,"Auto Loan","Loans for purchasing vehicles with collateral."
+3,"Home Loan","Long-term loans for buying or refinancing homes."
