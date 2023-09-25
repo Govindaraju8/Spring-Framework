@@ -1,0 +1,93 @@
+select * from InsurancePolicyPayments
+drop table InsurancePolicyPayments
+
+
+CREATE TABLE InsurancePolicyPayments (
+    inpp_id serial PRIMARY KEY, 
+    iplc_sindex int,
+	inpp_iplc_id int,
+    inpp_trans_id varchar(50),
+    inpp_amount numeric,
+    inpp_paymode char(10)
+);
+select * from InsurancePolicies 
+
+ALTER TABLE InsurancePolicyPayments
+ADD COLUMN iplc_sindex int;
+
+UPDATE InsurancePolicyPayments SET inpp_trans_id = 'xddfg' WHERE inpp_iplc_id =14  ;
+
+-- Sample data for the InsurancePolicies table
+INSERT INTO InsurancePolicies (iplc_cust_id, iplc_cdate, iplc_sum_assured, iplc_applicable_date, iplc_insp_id, iplc_yrly_prem_amount, iplc_expdate, iplc_agnt_id, iplc_mode)
+VALUES
+    (1, '2023-09-25', 100000, '2023-10-01', 1, 1200, '2024-09-25', 1, 'yearly'),
+    (2, '2023-09-25', 75000, '2023-10-01', 2, 800, '2024-09-25', 2, 'monthly'),
+    (3, '2023-09-25', 50000, '2023-10-01', 3, 600, '2024-09-25', 3, 'quarterly');
+
+delete  from InsurancePolicyPayments 
+
+select * from agent
+select * from InsurancePackages 
+select * from Customers
+
+select * from 
+INSERT INTO Agent (agnt_name, agnt_age, agnt_gender)
+VALUES
+    ('John Smith', 35, 'M'),
+    ('Jane Doe', 28, 'F'),
+    ('Bob Johnson', 42, 'M');
+    
+    
+    
+INSERT INTO InsurancePolicySchedule (iplc_id, iplc_sindex, iplc_date, iplc_premium, iplc_paid_date)
+VALUES
+    (13, 1, '2023-09-25', 100, '2023-09-25'),
+    (13, 2, '2023-10-25', 100, '2023-10-25'),
+    (14, 1, '2023-09-25', 75, '2023-09-25'),
+    (14, 2, '2023-10-25', 75, '2023-10-25'),
+    (15, 1, '2023-09-25', 50, '2023-09-25');
+    
+select * from InsurancePolicySchedule
+    
+CREATE OR REPLACE FUNCTION CreatePolicyPayments(policy_id int) RETURNS void AS $$
+DECLARE
+    schedule_row record;
+BEGIN
+    -- Loop through the schedule records for the specified policy
+    FOR schedule_row IN
+        SELECT * FROM InsurancePolicySchedule
+        WHERE iplc_id = policy_id
+    LOOP
+        -- Insert a record into InsurancePolicyPayments with inpp_trans_id as NULL
+        INSERT INTO InsurancePolicyPayments (inpp_iplc_id,iplc_sindex, inpp_trans_id, inpp_amount, inpp_paymode)
+        VALUES (schedule_row.iplc_id,schedule_row.iplc_sindex, NULL, schedule_row.iplc_premium, 'CARD');
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+-- Call the procedure for policy with ID 13
+SELECT CreatePolicyPayments(14);
+
+
+UPDATE InsurancePolicyPayments SET inpp_trans_id = 'fg' 
+WHERE inpp_iplc_id =13  AND iplc_sindex=
+(select iplc_sindex from InsurancePolicyPayments 
+where inpp_trans_id=null order by iplc_sindex limit 1);
+
+
+
+UPDATE InsurancePolicyPayments
+SET inpp_trans_id = 'fg' 
+WHERE inpp_iplc_id = 13 
+AND iplc_sindex = (
+    SELECT iplc_sindex
+    FROM InsurancePolicyPayments 
+    WHERE inpp_trans_id IS NULL 
+    ORDER BY iplc_sindex 
+    LIMIT 1
+);
+
+
