@@ -1,0 +1,200 @@
+Health Insurance Processing options
+	-12Sep2023
+
+
+Claim workflow
+
+1. Hospital or Customer apply for a claim, where  customer apply claim for reimbursemet by filling the
+claim details (patient details), claim coverage details along with supporting billing documents.
+
+2. Upong recieving the claim requests, insurance agent goes through the claim and supporting documents, 
+verifies the coverage eligibility and gives either initial approval to proceed for processing, or may
+reject couple of coverage items because of not eligible, or may ask for more supporting documents.
+
+3. This interaction between agent and customer/hospital agent may run for couple of times. This whole process need to be tracked and all the documents exchanged in this process to be stored with proper version numbers.
+
+4. Finally when insurance agent satisfies with claim and the supporting documents, he will give headsup for
+final approval which will be approved by the concerned manager,
+
+
+=> End Customer Options
+
+Login
+	-Forgot Password
+	-Register
+
+Dashboard
+	-will display the summary counts
+	-Sum assured
+	-no of family members, St date of insurance
+	-last premium paid,next premimum pay date
+	-List of add insurances
+	-no of claims, claim amount
+	....
+Insurances of Customer
+	-List of insurances available/taken by customer
+		-View/Apply
+Profile
+	-Self Profile
+	-complete details
+	-Family members
+		-complete info
+	-Upload medical report
+	-Add Ons Details (least priority)
+
+Payment Schedule
+	-View Schedule along with payment status
+	-Excel download
+	-Pdf download
+
+Transactions
+	-All premiums paid
+		-View Payment details
+
+Hospitals
+	-List hospitals with filters
+		-search
+		-City wise, grade wise,facility wise
+
+Claims
+	-Claims made 
+		-View Claim
+	-New Claim
+		-File Reimbursement
+
+Sign Out
+
+
+=> Hospital Options
+
+Login
+	-forgot passwd (auto email)
+	
+Dashboard
+	-imp summary counts
+	-NO of insurance applicants(Active & total in fin year)
+	-Claim Value (current & Total)
+	-Rejected (full & partial)
+
+
+	-
+Claims
+	-List Claims
+		-View Claim
+		-Status -processed/rejected
+		-REupload
+		-workflow for documents
+		-Track the history
+		-Excel download
+	-New Claim
+		-Add Patient Details
+		-Add patient history
+		-Add Procedures carried, and other charges like room rent
+		-Add Procedure based on ICD code
+Payments
+	-List the payments recieved
+
+Insurances
+	-List of insurance packages
+		-view
+		-List disceases covered
+			-details
+	-
+Security
+	-users(add/edit/delte)
+	-permissions(add/edite/delete)
+
+=> Insurance Company Options
+
+
+Login
+	-Change pasd
+Dashboard
+	-Imp summary counts
+	-Total Customers, packages
+	-hospitals network
+	-Disceases covered
+	-Total claims,Total applicants
+	.......
+
+Policies
+	-List 
+	-View & Download Excel & pdf
+	-New Policy registration
+	-Approval
+	-Policy Schecule
+
+Claims
+	-List Hospital Claims 
+		-View Claim
+		-Download documents
+		-Process/Reject Work flow
+		-Ask for new Documents
+	-List Reimbursement Claims
+		-View Claim
+		-Download documents
+		-Process/Reject Work flow
+		-Ask for new Documents
+Claim Settlements
+	-Claims for settlement
+		-View 
+		-Process payment
+Payments
+	-Premimum Payments recived
+		-View
+		-fileters
+	-Download
+Hospitals
+	-List 
+	-Add/Edit/Delete
+	-Suspend/Resume
+
+Insurance packages
+	-List 
+	-Add/Edit/Delete
+		-Package Wise Disceases
+		-Add/Edit/Delete
+	-Suspend/Resume
+
+Customers
+	-List 
+	-View
+	-Suspend/Resume
+
+Master Entry
+	-Disceases
+	
+Security
+	-users(add/edit/delte)
+	-permissions(add/edite/delete)
+
+Note: Different users perform different operations. Users who processes claims are different from who settles the payment'
+
+=> 
+
+
+POST		/NetworkHospitals		-create all network hospitals
+
+POST		/InsurancePackages		-create all insurance packages
+
+POST		/CoveredDisceases		-create all covered 
+
+GET		/NetworkHospitals		-list all network hospitals
+
+GET		/InsurancePackages		-list all insurance packages
+
+GET		/CoveredDisceases		-list all covered 
+
+POST		/Users				-Create/Register User
+						-Accept user details and return user details with 							confirm sts
+
+PUT		/Users				-Update User
+							contact details,
+
+POST		/login				-Verify login
+						-Accept user details and return security hash key
+
+POST		/Insurance			-Create New Insurance
+PUT		/Insurance			-Update Insurance (premimum, insured amount, address...)
+
+POST		/PremiumPayments		-Making Insurance Payments
