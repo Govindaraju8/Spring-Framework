@@ -188,4 +188,63 @@ hclm_hosp_id			int		FK(PK_HOSP)
 hclm_husr_id			int		FK(PK_HUSR)
 
 
+-- Create or replace a trigger function
+CREATE OR REPLACE FUNCTION Trigger_CreatePolicyPayments()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Call the CreatePolicyPayments procedure with the newly inserted policy_id
+    PERFORM CreatePolicyPayments(NEW.iplc_id);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create a trigger on the InsurancePolicySchedule table
+CREATE TRIGGER schedule_insert_trigger
+AFTER INSERT ON InsurancePolicySchedule
+FOR EACH ROW
+EXECUTE FUNCTION Trigger_CreatePolicyPayments();
+
+delete from InsurancePolicySchedule where iplc_id=15
+select * from InsurancePolicySchedule
+
+-- Insert sample data into the InsurancePolicySchedule table
+INSERT INTO InsurancePolicySchedule (iplc_id, iplc_sindex, iplc_date, iplc_premium, iplc_paid_date)
+VALUES
+    (15, 1, '2023-09-30', 100.00, '2023-10-01');
+    
+    select * from InsurancePolicyPayments
+    
+    select * from InsurancePolicies 
+    
+     select * from InsurancePolicyCoverageMembers
+    
+    
+INSERT INTO InsurancePolicyCoverageMembers (iplc_id, ipcm_membername, ipcm_relation, ipcm_dob, ipcm_gender, ipcm_healthhistory)
+SELECT
+    p.iplc_id,
+    'dhg',            -- Replace with the actual member name
+    'hdeth',              -- Replace with the actual relation
+    '1990-01-15',    -- Replace with the actual date of birth
+    'f',                   -- Replace with the actual gender
+    'No ssues' -- Replace with the actual health history
+FROM InsurancePolicies p
+WHERE p.iplc_id = 13; -- Replace with the specific policy_id you want to match
+
+INSERT INTO InsurancePolicyCoverageMembers (iplc_id, ipcm_membername, ipcm_relation, ipcm_dob, ipcm_gender, ipcm_healthhistory)
+VALUES
+    (15, 'John Doe', 'Spouse', '1990-01-15'::date, 'M', 'No known health issues');
+   
+
+
+CREATE TABLE InsurancePolicyCoverageMembers (
+    ipcm_mindex serial PRIMARY KEY,
+    iplc_id int,
+    ipcm_membername varchar(60),
+    ipcm_relation varchar(60),
+    ipcm_dob date,
+    ipcm_gender char(1),
+    ipcm_healthhistory varchar(255),
+    FOREIGN KEY (iplc_id) REFERENCES InsurancePolicies(iplc_id)
+);
+
 
