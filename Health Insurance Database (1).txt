@@ -248,3 +248,24 @@ CREATE TABLE InsurancePolicyCoverageMembers (
 );
 
 
+CREATE OR REPLACE FUNCTION update_iplc_paid_date_by_params(
+    p_inpp_iplc_id int,
+    p_iplc_sindex smallint,
+    p_inpp_date date
+)
+RETURNS void AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM InsurancePolicySchedule
+        WHERE iplc_id = p_inpp_iplc_id
+        AND iplc_sindex = p_iplc_sindex
+    ) THEN
+        UPDATE InsurancePolicySchedule
+        SET iplc_paid_date = p_inpp_date
+        WHERE iplc_id = p_inpp_iplc_id
+        AND iplc_sindex = p_iplc_sindex;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
